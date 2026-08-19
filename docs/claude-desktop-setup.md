@@ -36,7 +36,7 @@ Add to your Claude Desktop MCP configuration file:
         "run", "-i", "--rm",
         "-e", "ROX_ENDPOINT",
         "-e", "ROX_API_TOKEN",
-        "rhacs-mcp"
+        "quay.io/danclark/rhacs-mcp:latest"
       ],
       "env": {
         "ROX_ENDPOINT": "https://central.example.com:443",
