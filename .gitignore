@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.tgz
+.env
+api_spec
+prompt.md

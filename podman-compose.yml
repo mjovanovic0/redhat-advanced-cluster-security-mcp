@@ -1,0 +1,11 @@
+services:
+  rhacs-mcp:
+    build:
+      context: .
+      dockerfile: Containerfile
+    stdin_open: true
+    environment:
+      - ROX_ENDPOINT=${ROX_ENDPOINT}
+      - ROX_API_TOKEN=${ROX_API_TOKEN}
+      - ROX_INSECURE_SKIP_TLS_VERIFY=${ROX_INSECURE_SKIP_TLS_VERIFY:-false}
+      - NODE_TLS_REJECT_UNAUTHORIZED=${NODE_TLS_REJECT_UNAUTHORIZED:-1}
