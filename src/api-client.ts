@@ -1,5 +1,14 @@
 const MAX_RESPONSE_CHARS = 100_000;
 
+export const productConfig = {
+  name: "RHACS Central",
+  endpointEnvVar: "ROX_ENDPOINT",
+  tokenEnvVar: "ROX_API_TOKEN",
+  tokenUiPath:
+    "Platform Configuration > Integrations > Authentication Tokens > API Token",
+  endpointExample: "https://central.example.com:443",
+};
+
 if (process.env.ROX_INSECURE_SKIP_TLS_VERIFY === "true") {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 }
@@ -12,14 +21,14 @@ export interface ApiResponse {
 
 export function validateConfig(): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-  if (!process.env.ROX_ENDPOINT) {
+  if (!process.env[productConfig.endpointEnvVar]) {
     errors.push(
-      "ROX_ENDPOINT is not set. Set it to your RHACS Central URL (e.g. https://central.example.com:443).",
+      `${productConfig.endpointEnvVar} is not set. Set it to your ${productConfig.name} URL (e.g. ${productConfig.endpointExample}).`,
     );
   }
-  if (!process.env.ROX_API_TOKEN) {
+  if (!process.env[productConfig.tokenEnvVar]) {
     errors.push(
-      "ROX_API_TOKEN is not set. Generate an API token in RHACS Central > Platform Configuration > Integrations > API Token.",
+      `${productConfig.tokenEnvVar} is not set. Generate an API token in ${productConfig.name} > ${productConfig.tokenUiPath}.`,
     );
   }
   return { valid: errors.length === 0, errors };
@@ -71,12 +80,12 @@ function truncateResponse(data: unknown): { data: unknown; truncated: boolean } 
 }
 
 function formatNetworkError(err: unknown, url: string): string {
-  const endpoint = process.env.ROX_ENDPOINT ?? "(not set)";
+  const endpoint = process.env[productConfig.endpointEnvVar] ?? "(not set)";
   if (err instanceof TypeError && String(err.cause ?? err.message).includes("ECONNREFUSED")) {
-    return `Cannot connect to RHACS Central at ${endpoint}. Verify the URL and that Central is running.`;
+    return `Cannot connect to ${productConfig.name} at ${endpoint}. Verify the URL and that the server is running.`;
   }
   if (err instanceof TypeError && String(err.cause ?? err.message).includes("ETIMEDOUT")) {
-    return `Request to RHACS Central timed out. The server may be overloaded or unreachable at ${endpoint}.`;
+    return `Request to ${productConfig.name} timed out. The server may be overloaded or unreachable at ${endpoint}.`;
   }
   if (err instanceof DOMException && err.name === "AbortError") {
     return `Request to ${url} timed out after ${getTimeout()}ms.`;
@@ -91,16 +100,16 @@ function formatHttpError(status: number, body: string, url: string): string {
   const snippet = body.slice(0, 500);
   switch (status) {
     case 401:
-      return "Authentication failed. The API token may be expired or invalid. Generate a new token in RHACS Central > Platform Configuration > Integrations > API Token.";
+      return `Authentication failed. The API token may be expired or invalid. Generate a new token in ${productConfig.name} > ${productConfig.tokenUiPath}.`;
     case 403:
       return `Access denied for ${url}. The API token does not have permission for this operation. Check the token's role and access scope.`;
     case 404:
       return `Endpoint not found: ${url}. Verify the path using rhacs_get_endpoint_details.`;
     default:
       if (status >= 500) {
-        return `RHACS Central returned server error ${status}: ${snippet}`;
+        return `${productConfig.name} returned server error ${status}: ${snippet}`;
       }
-      return `RHACS API returned HTTP ${status} for ${url}: ${snippet}`;
+      return `${productConfig.name} returned HTTP ${status} for ${url}: ${snippet}`;
   }
 }
 
@@ -113,15 +122,16 @@ export async function rhacsApiCall(
     timeoutMs?: number;
   },
 ): Promise<ApiResponse> {
-  const baseUrl = process.env.ROX_ENDPOINT;
+  const baseUrl = process.env[productConfig.endpointEnvVar];
   if (!baseUrl) {
     throw new Error(
-      "ROX_ENDPOINT environment variable is not set. Set it to your RHACS Central URL (e.g. https://central.example.com:443).",
+      `${productConfig.endpointEnvVar} environment variable is not set. Set it to your ${productConfig.name} URL (e.g. ${productConfig.endpointExample}).`,
     );
   }
-  if (!process.env.ROX_API_TOKEN) {
+  const apiToken = process.env[productConfig.tokenEnvVar];
+  if (!apiToken) {
     throw new Error(
-      "ROX_API_TOKEN environment variable is not set. Generate an API token in RHACS Central > Platform Configuration > Integrations > API Token.",
+      `${productConfig.tokenEnvVar} environment variable is not set. Generate an API token in ${productConfig.name} > ${productConfig.tokenUiPath}.`,
     );
   }
 
@@ -137,7 +147,7 @@ export async function rhacsApiCall(
   const timer = setTimeout(() => controller.abort(), timeout);
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${process.env.ROX_API_TOKEN}`,
+    Authorization: `Bearer ${apiToken}`,
     Accept: "application/json",
   };
 
@@ -166,10 +176,14 @@ export async function rhacsApiCall(
     return { status: res.status, data: finalData, truncated };
   } catch (err) {
     clearTimeout(timer);
-    if (err instanceof Error && err.message.startsWith("Authentication failed")) throw err;
-    if (err instanceof Error && err.message.startsWith("Access denied")) throw err;
-    if (err instanceof Error && err.message.startsWith("Endpoint not found")) throw err;
-    if (err instanceof Error && err.message.startsWith("RHACS")) throw err;
+    if (
+      err instanceof Error &&
+      (err.message.startsWith("Authentication failed") ||
+        err.message.startsWith("Access denied") ||
+        err.message.startsWith("Endpoint not found") ||
+        err.message.startsWith(productConfig.name))
+    )
+      throw err;
     throw new Error(formatNetworkError(err, url.toString()));
   }
 }

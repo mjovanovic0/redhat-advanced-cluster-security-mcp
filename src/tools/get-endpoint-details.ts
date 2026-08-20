@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getEndpoint, getService, findClosestServices } from "../registry.js";
+import { getEndpoint, getService, findClosestServices, stripModelSuffix } from "../registry.js";
 import type { EndpointSpec } from "../types.js";
 
 export const getEndpointDetailsSchema = z.object({
@@ -45,7 +45,7 @@ function formatEndpoint(ep: EndpointSpec): string {
   if (ep.body_parameter?.length) {
     sections.push("\n### Body Parameter");
     for (const p of ep.body_parameter) {
-      const typeRef = p.type_ref?.replace(/_CommonObjectReference$/, "") ?? p.description;
+      const typeRef = (p.type_ref ? stripModelSuffix(p.type_ref) : undefined) ?? p.description;
       sections.push(
         `- ${p.name}: ${typeRef} (use rhacs_get_model to see the schema)`,
       );
@@ -53,7 +53,7 @@ function formatEndpoint(ep: EndpointSpec): string {
   }
 
   sections.push(`\n### Return Type`);
-  const retRef = ep.return_type_ref?.replace(/_CommonObjectReference$/, "");
+  const retRef = ep.return_type_ref ? stripModelSuffix(ep.return_type_ref) : undefined;
   if (retRef) {
     sections.push(
       `${ep.return_type} (use rhacs_get_model with "${retRef}" to see fields)`,

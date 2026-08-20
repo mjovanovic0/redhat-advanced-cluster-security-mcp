@@ -12,6 +12,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const API_SPEC_DIR = resolve(__dirname, "..", "api_spec");
 
+export const MODEL_REF_SUFFIX = "_CommonObjectReference";
+
+export function stripModelSuffix(name: string): string {
+  return name.endsWith(MODEL_REF_SUFFIX)
+    ? name.slice(0, -MODEL_REF_SUFFIX.length)
+    : name;
+}
+
 function readJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf-8")) as T;
 }
@@ -58,7 +66,7 @@ for (const [key, model] of Object.entries(modelsFile.models)) {
   modelsByKey.set(key, model);
   modelsByKey.set(model.name, model);
   modelsByKey.set(model.name.toLowerCase(), model);
-  const withoutSuffix = key.replace(/_CommonObjectReference$/, "");
+  const withoutSuffix = stripModelSuffix(key);
   if (withoutSuffix !== key) {
     modelsByKey.set(withoutSuffix, model);
   }
@@ -106,7 +114,24 @@ export function getModel(name: string): ModelSpec | undefined {
   return (
     modelsByKey.get(name) ??
     modelsByKey.get(name.toLowerCase()) ??
-    modelsByKey.get(name.replace(/_CommonObjectReference$/, ""))
+    modelsByKey.get(stripModelSuffix(name))
+  );
+}
+
+export function isStreamingEndpoint(
+  serviceName: string,
+  endpointName: string,
+): boolean {
+  const ep = getEndpoint(serviceName, endpointName);
+  if (!ep) return false;
+  return ep.return_type.startsWith("Stream result");
+}
+
+export function isStreamingPath(path: string): boolean {
+  return allEndpoints.some(
+    ({ endpoint }) =>
+      endpoint.path === path &&
+      endpoint.return_type.startsWith("Stream result"),
   );
 }
 

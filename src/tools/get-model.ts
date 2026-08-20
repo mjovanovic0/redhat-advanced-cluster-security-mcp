@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getModel, findClosestModels } from "../registry.js";
+import { getModel, findClosestModels, stripModelSuffix, MODEL_REF_SUFFIX } from "../registry.js";
 
 export const getModelSchema = z.object({
   model_name: z
@@ -15,7 +15,7 @@ export async function getModelDetails(input: {
   const model = getModel(input.model_name);
   if (!model) {
     const suggestions = findClosestModels(input.model_name);
-    return `Model "${input.model_name}" not found.${suggestions.length ? ` Did you mean: ${suggestions.join(", ")}?` : ""}\nTip: model names from endpoint specs often have a _CommonObjectReference suffix — try without it.`;
+    return `Model "${input.model_name}" not found.${suggestions.length ? ` Did you mean: ${suggestions.join(", ")}?` : ""}\nTip: model names from endpoint specs often have a ${MODEL_REF_SUFFIX} suffix — try without it.`;
   }
 
   const sections: string[] = [`## ${model.name}`];
@@ -28,7 +28,7 @@ export async function getModelDetails(input: {
       const format = f.format ?? "";
       const desc = f.description ?? "";
       const ref = f.type_ref
-        ? ` (→ rhacs_get_model: "${f.type_ref.replace(/_CommonObjectReference$/, "")}")`
+        ? ` (→ rhacs_get_model: "${stripModelSuffix(f.type_ref)}")`
         : "";
       sections.push(`| ${f.name} | ${typeDisplay}${ref} | ${format} | ${desc} |`);
     }

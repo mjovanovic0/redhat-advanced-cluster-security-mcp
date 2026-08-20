@@ -1,14 +1,6 @@
 import { z } from "zod";
 import { rhacsApiCall } from "../api-client.js";
-
-const STREAMING_PATHS = [
-  "/v1/export/deployments",
-  "/v1/export/images",
-  "/v1/export/nodes",
-  "/v1/export/pods",
-  "/v1/debug/authz/trace",
-  "/v1/export/vulnmgmt/workloads",
-];
+import { isStreamingPath } from "../registry.js";
 
 export const callApiSchema = z.object({
   method: z
@@ -68,9 +60,7 @@ export async function callApi(input: {
     return `Warning: ${input.method} requests should not have a body. The body will be ignored. Use query_params for GET/DELETE filtering.`;
   }
 
-  const isStreaming = STREAMING_PATHS.some((sp) =>
-    resolvedPath.startsWith(sp),
-  );
+  const isStreaming = isStreamingPath(input.path);
   const timeoutMs = isStreaming ? 120_000 : undefined;
 
   const response = await rhacsApiCall(input.method, resolvedPath, {
