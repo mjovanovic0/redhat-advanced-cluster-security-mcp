@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type {
@@ -51,6 +51,14 @@ function registerService(service: ServiceSpec, filename: string): void {
 }
 
 // Load on module initialization
+if (!existsSync(resolve(API_SPEC_DIR, "_index.json"))) {
+  console.error(
+    `API spec not found in ${API_SPEC_DIR}.\n` +
+      "Generate it from the RHACS OpenAPI spec for your Central version, e.g.:\n" +
+      "  npm run generate-spec -- 4.11.6",
+  );
+  process.exit(1);
+}
 const index = readJson<ServiceIndex>(resolve(API_SPEC_DIR, "_index.json"));
 for (const entry of index.services) {
   if (entry.file === "common_object_reference.json") continue;

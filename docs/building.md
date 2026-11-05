@@ -9,6 +9,7 @@
 
 ```bash
 npm install
+npm run generate-spec -- 4.11.6   # your RHACS Central version
 npm run build
 npm start
 ```
@@ -33,6 +34,8 @@ Generate an API token in RHACS Central: **Platform Configuration > Integrations 
 The discovery tools (`rhacs_list_services`, `rhacs_list_endpoints`, `rhacs_get_endpoint_details`, `rhacs_get_model`, `rhacs_search_endpoints`) work without any environment variables. Only `rhacs_call_api` requires `ROX_ENDPOINT` and `ROX_API_TOKEN`.
 
 ## Container Build
+
+Generate `api_spec/` first (see above); the Containerfile copies it into the image.
 
 ```bash
 # Build with podman

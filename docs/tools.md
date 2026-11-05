@@ -18,13 +18,13 @@ Or use **`rhacs_search_endpoints`** to jump directly to relevant endpoints by ke
 
 ### rhacs_list_services
 
-List all 69 RHACS API services with endpoint counts.
+List all RHACS API services with endpoint counts.
 
 **Parameters:** None
 
 **Example result:**
 ```
-RHACS API — 69 services, 361 total endpoints
+RHACS API — 71 services, 372 total endpoints
 
 Administration Event Service (3 endpoints)
 Alert Service (9 endpoints)

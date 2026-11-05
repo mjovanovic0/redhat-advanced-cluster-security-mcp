@@ -4,8 +4,8 @@ MCP server providing LLM access to the Red Hat Advanced Cluster Security for Kub
 
 ## What This Is
 
-- 69 RHACS API services, 361 endpoints, 900 data models
-- 6 MCP meta-tools instead of 361 static tools (LLMs can't handle huge tool lists)
+- ~70 RHACS API services, 370+ endpoints, 900+ data models (4.11.6: 71 / 372 / 945)
+- 6 MCP meta-tools instead of hundreds of static tools (LLMs can't handle huge tool lists)
 - 5 discovery tools work offline; 1 execution tool calls live RHACS Central
 
 ## Project Structure
@@ -17,7 +17,8 @@ src/registry.ts           Loads api_spec/ JSON at startup, fuzzy service/model l
 src/types.ts              TypeScript interfaces for api_spec data shapes
 src/tools/                One file per tool: list-services, list-endpoints,
                           get-endpoint-details, call-api, get-model, search-endpoints
-api_spec/                 69 service JSONs + _index.json + common_object_reference.json
+api_spec/                 Generated (gitignored): service JSONs + _index.json + common_object_reference.json
+scripts/generate-api-spec.mjs  Converts RHACS v1+v2 swagger into api_spec/
 docs/                     Building, Claude setup, tool reference, architecture
 Containerfile             Multi-stage UBI9 (builder + ubi-minimal runtime)
 podman-compose.yml        stdin_open: true for stdio transport
@@ -36,7 +37,7 @@ podman-compose.yml        stdin_open: true for stdio transport
 
 | Tool | Purpose | Live RHACS? |
 |------|---------|:-----------:|
-| `rhacs_list_services` | List all 69 services | No |
+| `rhacs_list_services` | List all services | No |
 | `rhacs_list_endpoints` | Endpoints for a service | No |
 | `rhacs_get_endpoint_details` | Full param/response spec | No |
 | `rhacs_get_model` | Model fields or enum values | No |
@@ -47,6 +48,7 @@ podman-compose.yml        stdin_open: true for stdio transport
 
 ```bash
 npm install && npm run build    # compile TypeScript
+npm run generate-spec -- 4.11.6 # generate api_spec/ from RHACS swagger
 npm start                       # run MCP server on stdio
 npm run dev                     # watch mode
 ./build.sh                      # podman container build
@@ -95,7 +97,7 @@ For self-signed certs, add `"ROX_INSECURE_SKIP_TLS_VERIFY": "true"` or `"NODE_EX
 
 - `api_spec/_index.json` — service catalog with filenames and endpoint counts
 - Each service JSON has: `service`, `endpoints[]` with `method`, `path`, `*_parameters`, `return_type`, `responses`
-- `common_object_reference.json` — 900 models with `fields[]` (objects) or `raw[]` (enums)
+- `common_object_reference.json` — models with `fields[]` (objects) or `enum_values[]` (enums)
 - Path params use `{name}` notation including dotted names like `{config.id}`
 - References use `_CommonObjectReference` suffix (e.g. `StorageAlert_CommonObjectReference`)
 

@@ -92,4 +92,4 @@ After configuring, ask Claude:
 
 > "Use the RHACS tools to list all available API services."
 
-Claude should call `rhacs_list_services` and return the list of 69 services.
+Claude should call `rhacs_list_services` and return the list of services.
