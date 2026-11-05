@@ -34,6 +34,9 @@ local files or URLs instead of a version:
 npm run generate-spec -- ./v1.swagger.json ./v2.swagger.json
 ```
 
+Behind a proxy, set `HTTPS_PROXY` (and `NO_PROXY`); the specs are then downloaded with `curl`,
+since Node's `fetch()` does not use proxy variables.
+
 The server exits with an error at startup if `api_spec/` is missing. The container build
 generates the spec itself (see below), so this step is only needed when running from source.
 

@@ -15,6 +15,24 @@ spec:
       value: latest
   taskRunTemplate:
     serviceAccountName: pipeline
+    # Proxy for internet access (git clone, base image pulls, dnf, npm, RHACS spec download).
+    # Set on every step container; buildah passes them on to the Containerfile RUN steps.
+    # Delete this podTemplate if the cluster has direct internet access.
+    # NO_PROXY must cover the internal registry, or the image push goes to the proxy.
+    podTemplate:
+      env:
+        - name: HTTP_PROXY
+          value: http://proxy.example.com:3128
+        - name: HTTPS_PROXY
+          value: http://proxy.example.com:3128
+        - name: NO_PROXY
+          value: .cluster.local,.svc,localhost,127.0.0.1,172.30.0.0/16,10.128.0.0/14
+        - name: http_proxy
+          value: http://proxy.example.com:3128
+        - name: https_proxy
+          value: http://proxy.example.com:3128
+        - name: no_proxy
+          value: .cluster.local,.svc,localhost,127.0.0.1,172.30.0.0/16,10.128.0.0/14
   workspaces:
     - name: source
       volumeClaimTemplate:

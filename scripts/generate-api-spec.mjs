@@ -8,7 +8,11 @@
 // The RHACS specs are published at
 //   https://mirror.openshift.com/pub/rhacs/openapi-spec/<version>/v1.swagger.json
 //   https://mirror.openshift.com/pub/rhacs/openapi-spec/<version>/v2.swagger.json
+//
+// Behind a proxy: Node's fetch() ignores HTTP(S)_PROXY, so when a proxy variable is set
+// the specs are downloaded with curl, which honors HTTPS_PROXY / NO_PROXY.
 
+import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,8 +41,18 @@ if (args.length === 1 && /^\d+\.\d+(\.\d+)?$/.test(args[0])) {
   if (m) version = m[1];
 }
 
+const proxyVars = ["HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy"];
+const useProxy = proxyVars.some((v) => process.env[v]);
+
 async function load(src) {
   if (/^https?:\/\//.test(src)) {
+    if (useProxy) {
+      const body = execFileSync("curl", ["-fsSL", "--retry", "3", src], {
+        encoding: "utf-8",
+        maxBuffer: 64 * 1024 * 1024,
+      });
+      return JSON.parse(body);
+    }
     const res = await fetch(src);
     if (!res.ok) throw new Error(`GET ${src} failed: HTTP ${res.status}`);
     return res.json();
