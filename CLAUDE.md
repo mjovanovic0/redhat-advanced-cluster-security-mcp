@@ -11,7 +11,8 @@ MCP server providing LLM access to the Red Hat Advanced Cluster Security for Kub
 ## Project Structure
 
 ```
-src/index.ts              Entry point: McpServer, 6 tool registrations, StdioServerTransport
+src/index.ts              Entry point: createServer() with 6 tools; stdio or HTTP (MCP_TRANSPORT)
+src/http.ts               Streamable HTTP mode: stateless, bearer auth (MCP_AUTH_TOKEN), /healthz
 src/api-client.ts         HTTP client: Bearer auth, TLS, timeout, error messages
 src/registry.ts           Loads api_spec/ JSON at startup, fuzzy service/model lookup
 src/types.ts              TypeScript interfaces for api_spec data shapes
@@ -22,6 +23,7 @@ scripts/generate-api-spec.mjs  Converts RHACS v1+v2 swagger into api_spec/
 docs/                     Building, Claude setup, tool reference, architecture
 Containerfile             Multi-stage UBI9; builder generates api_spec (ARG ACS_VERSION)
 tekton/                   OpenShift Pipelines: git-clone + buildah -> internal registry
+deploy/openshift/         Kustomize: Deployment (HTTP mode), Service, Route
 podman-compose.yml        stdin_open: true for stdio transport
 ```
 
@@ -63,6 +65,9 @@ npm run dev                     # watch mode
 | `ROX_API_TOKEN` | For API calls | — | Bearer token |
 | `ROX_INSECURE_SKIP_TLS_VERIFY` | No | `false` | Skip TLS verification |
 | `ROX_TIMEOUT_MS` | No | `30000` | Request timeout (ms) |
+| `MCP_TRANSPORT` | No | `stdio` | `http` serves MCP Streamable HTTP on `MCP_PORT` |
+| `MCP_AUTH_TOKEN` | In HTTP mode | — | Bearer token clients must send in HTTP mode |
+| `MCP_PORT` / `MCP_HOST` / `MCP_PATH` | No | `8080` / `0.0.0.0` / `/mcp` | HTTP mode listener |
 
 ## Claude Desktop / Claude Code Config
 
@@ -93,6 +98,7 @@ For self-signed certs, add `"ROX_INSECURE_SKIP_TLS_VERIFY": "true"` or `"NODE_EX
 - **Error messages**: human-readable, actionable (tells user where to generate tokens, what to check)
 - **`schema.shape`**: pass Zod schema's `.shape` property to `server.tool()`, not the schema itself
 - **All logging to stderr**: stdout is reserved for MCP JSON-RPC protocol
+- **HTTP mode is stateless and always authenticated**: a fresh McpServer per request; the pod holds the RHACS token, so `MCP_AUTH_TOKEN` is mandatory
 
 ## API Spec Data
 

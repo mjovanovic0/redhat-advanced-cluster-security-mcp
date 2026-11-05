@@ -25,4 +25,6 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist/ dist/
 COPY --from=builder /app/api_spec/ api_spec/
 USER 1001
+# Used only when MCP_TRANSPORT=http
+EXPOSE 8080
 ENTRYPOINT ["node", "dist/index.js"]

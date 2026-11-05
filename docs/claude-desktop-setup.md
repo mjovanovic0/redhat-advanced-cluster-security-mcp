@@ -66,6 +66,15 @@ Add to your project `.mcp.json` or global `~/.claude/mcp.json`:
 }
 ```
 
+## Remote server (HTTP mode)
+
+If the server runs as a shared service (see [Deploying on OpenShift](openshift-deploy.md)):
+
+```bash
+claude mcp add --transport http rhacs https://<route-host>/mcp \
+  --header "Authorization: Bearer <MCP_AUTH_TOKEN>"
+```
+
 ## Self-Signed Certificates
 
 RHACS Central often uses self-signed TLS certificates. Two options:

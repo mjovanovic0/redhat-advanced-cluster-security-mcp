@@ -75,6 +75,12 @@ podman run -i --rm \
   rhacs-mcp
 ```
 
+## HTTP Mode
+
+Set `MCP_TRANSPORT=http` and `MCP_AUTH_TOKEN` to serve MCP Streamable HTTP on `:8080/mcp`
+instead of stdio, e.g. to run it as a shared service on OpenShift. Clients must send
+`Authorization: Bearer <MCP_AUTH_TOKEN>`. See [Deploying on OpenShift](docs/openshift-deploy.md).
+
 ## Documentation
 
 - [Building and Running](docs/building.md)
@@ -82,6 +88,7 @@ podman run -i --rm \
 - [Tools Reference](docs/tools.md)
 - [Architecture](docs/architecture.md)
 - [Building on OpenShift with Tekton](docs/tekton.md)
+- [Deploying on OpenShift (HTTP)](docs/openshift-deploy.md)
 
 ## Project Structure
 
@@ -97,6 +104,7 @@ scripts/                # generate-api-spec.mjs (swagger -> api_spec)
 docs/                   # Documentation
 Containerfile           # Multi-stage UBI9 container build
 tekton/                 # OpenShift Pipelines build -> internal registry
+deploy/openshift/       # Deployment, Service, Route (HTTP mode)
 podman-compose.yml      # Local testing config
 ```
 

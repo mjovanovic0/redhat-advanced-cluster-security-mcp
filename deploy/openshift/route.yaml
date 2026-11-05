@@ -1,0 +1,17 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: rhacs-mcp
+  annotations:
+    # Streaming export endpoints can take up to 120s.
+    haproxy.router.openshift.io/timeout: 150s
+spec:
+  # host: rhacs-mcp.apps.example.com   # defaults to rhacs-mcp-<namespace>.<apps domain>
+  to:
+    kind: Service
+    name: rhacs-mcp
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

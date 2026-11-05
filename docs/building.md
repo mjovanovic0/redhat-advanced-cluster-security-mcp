@@ -28,6 +28,9 @@ npm run dev
 | `ROX_API_TOKEN` | For API calls | — | API token from RHACS Central |
 | `ROX_INSECURE_SKIP_TLS_VERIFY` | No | `false` | Skip TLS certificate verification |
 | `ROX_TIMEOUT_MS` | No | `30000` | HTTP request timeout in milliseconds |
+| `MCP_TRANSPORT` | No | `stdio` | `http` serves MCP Streamable HTTP on `MCP_PORT` |
+| `MCP_AUTH_TOKEN` | In HTTP mode | — | Bearer token clients must send in HTTP mode |
+| `MCP_PORT` / `MCP_HOST` / `MCP_PATH` | No | `8080` / `0.0.0.0` / `/mcp` | HTTP mode listener |
 
 Generate an API token in RHACS Central: **Platform Configuration > Integrations > Authentication Tokens > API Token**.
 

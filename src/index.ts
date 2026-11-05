@@ -19,11 +19,7 @@ import {
   searchEndpointsHandler,
 } from "./tools/search-endpoints.js";
 import { validateConfig } from "./api-client.js";
-
-const server = new McpServer({
-  name: "rhacs",
-  version: "1.0.0",
-});
+import { startHttpServer } from "./http.js";
 
 function toolHandler(fn: (input: Record<string, unknown>) => Promise<string>) {
   return async (input: Record<string, unknown>) => {
@@ -40,47 +36,56 @@ function toolHandler(fn: (input: Record<string, unknown>) => Promise<string>) {
   };
 }
 
-server.tool(
-  "rhacs_list_services",
-  "List all available RHACS API services with their endpoint counts. Use this first to discover which services exist (e.g. Alert Service, Deployment Service, Policy Service). Returns service names you can pass to rhacs_list_endpoints.",
-  listServicesSchema.shape,
-  toolHandler(listServices as (input: Record<string, unknown>) => Promise<string>),
-);
+export function createServer(): McpServer {
+  const server = new McpServer({
+    name: "rhacs",
+    version: "1.0.0",
+  });
 
-server.tool(
-  "rhacs_list_endpoints",
-  "List all endpoints for a specific RHACS API service. Returns endpoint names, HTTP methods, paths, and descriptions. Use after rhacs_list_services to drill into a service.",
-  listEndpointsSchema.shape,
-  toolHandler(listEndpoints as (input: Record<string, unknown>) => Promise<string>),
-);
+  server.tool(
+    "rhacs_list_services",
+    "List all available RHACS API services with their endpoint counts. Use this first to discover which services exist (e.g. Alert Service, Deployment Service, Policy Service). Returns service names you can pass to rhacs_list_endpoints.",
+    listServicesSchema.shape,
+    toolHandler(listServices as (input: Record<string, unknown>) => Promise<string>),
+  );
 
-server.tool(
-  "rhacs_get_endpoint_details",
-  "Get full details for a specific RHACS API endpoint including all parameters (query, path, body), return type, and response codes. Use to understand what to pass to rhacs_call_api.",
-  getEndpointDetailsSchema.shape,
-  toolHandler(getEndpointDetails as (input: Record<string, unknown>) => Promise<string>),
-);
+  server.tool(
+    "rhacs_list_endpoints",
+    "List all endpoints for a specific RHACS API service. Returns endpoint names, HTTP methods, paths, and descriptions. Use after rhacs_list_services to drill into a service.",
+    listEndpointsSchema.shape,
+    toolHandler(listEndpoints as (input: Record<string, unknown>) => Promise<string>),
+  );
 
-server.tool(
-  "rhacs_call_api",
-  "Call a RHACS Central API endpoint. Substitutes path parameters, adds query parameters, and sends the request body. Returns the JSON response. Use rhacs_get_endpoint_details first to understand required parameters.",
-  callApiSchema.shape,
-  toolHandler(callApi as (input: Record<string, unknown>) => Promise<string>),
-);
+  server.tool(
+    "rhacs_get_endpoint_details",
+    "Get full details for a specific RHACS API endpoint including all parameters (query, path, body), return type, and response codes. Use to understand what to pass to rhacs_call_api.",
+    getEndpointDetailsSchema.shape,
+    toolHandler(getEndpointDetails as (input: Record<string, unknown>) => Promise<string>),
+  );
 
-server.tool(
-  "rhacs_get_model",
-  "Look up a RHACS data model definition. Returns field names and types for object models, or enum values for enums. Use to understand request body schemas and response shapes.",
-  getModelSchema.shape,
-  toolHandler(getModelDetails as (input: Record<string, unknown>) => Promise<string>),
-);
+  server.tool(
+    "rhacs_call_api",
+    "Call a RHACS Central API endpoint. Substitutes path parameters, adds query parameters, and sends the request body. Returns the JSON response. Use rhacs_get_endpoint_details first to understand required parameters.",
+    callApiSchema.shape,
+    toolHandler(callApi as (input: Record<string, unknown>) => Promise<string>),
+  );
 
-server.tool(
-  "rhacs_search_endpoints",
-  "Search across all RHACS API endpoints by keyword. Searches endpoint names, paths, and descriptions. Faster than browsing service by service when you know what you're looking for.",
-  searchEndpointsSchema.shape,
-  toolHandler(searchEndpointsHandler as (input: Record<string, unknown>) => Promise<string>),
-);
+  server.tool(
+    "rhacs_get_model",
+    "Look up a RHACS data model definition. Returns field names and types for object models, or enum values for enums. Use to understand request body schemas and response shapes.",
+    getModelSchema.shape,
+    toolHandler(getModelDetails as (input: Record<string, unknown>) => Promise<string>),
+  );
+
+  server.tool(
+    "rhacs_search_endpoints",
+    "Search across all RHACS API endpoints by keyword. Searches endpoint names, paths, and descriptions. Faster than browsing service by service when you know what you're looking for.",
+    searchEndpointsSchema.shape,
+    toolHandler(searchEndpointsHandler as (input: Record<string, unknown>) => Promise<string>),
+  );
+
+  return server;
+}
 
 async function main() {
   const config = validateConfig();
@@ -93,8 +98,17 @@ async function main() {
     );
   }
 
+  const mode = (process.env.MCP_TRANSPORT ?? "stdio").toLowerCase();
+  if (mode === "http") {
+    await startHttpServer(createServer);
+    return;
+  }
+  if (mode !== "stdio") {
+    throw new Error(`Unknown MCP_TRANSPORT "${mode}". Use "stdio" or "http".`);
+  }
+
   const transport = new StdioServerTransport();
-  await server.connect(transport);
+  await createServer().connect(transport);
   console.error("RHACS MCP server running on stdio");
 }
 

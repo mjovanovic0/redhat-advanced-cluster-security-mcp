@@ -1,0 +1,24 @@
+# Alternative to route.yaml for plain Kubernetes ingress controllers (not in kustomization.yaml).
+# On OpenShift an Ingress is converted into a Route by the ingress operator.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rhacs-mcp
+  annotations:
+    route.openshift.io/termination: edge
+    haproxy.router.openshift.io/timeout: 150s
+spec:
+  rules:
+    - host: rhacs-mcp.apps.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rhacs-mcp
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - rhacs-mcp.apps.example.com
