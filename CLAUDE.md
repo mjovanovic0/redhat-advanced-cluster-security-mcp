@@ -20,7 +20,8 @@ src/tools/                One file per tool: list-services, list-endpoints,
 api_spec/                 Generated (gitignored): service JSONs + _index.json + common_object_reference.json
 scripts/generate-api-spec.mjs  Converts RHACS v1+v2 swagger into api_spec/
 docs/                     Building, Claude setup, tool reference, architecture
-Containerfile             Multi-stage UBI9 (builder + ubi-minimal runtime)
+Containerfile             Multi-stage UBI9; builder generates api_spec (ARG ACS_VERSION)
+tekton/                   OpenShift Pipelines: git-clone + buildah -> internal registry
 podman-compose.yml        stdin_open: true for stdio transport
 ```
 

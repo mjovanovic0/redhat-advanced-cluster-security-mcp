@@ -1,0 +1,86 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: rhacs-mcp-build
+  labels:
+    app.kubernetes.io/name: rhacs-mcp
+spec:
+  description: >-
+    Clones the RHACS MCP server, builds the container image (bundling the RHACS
+    OpenAPI spec for the given version) and pushes it to the OpenShift internal registry.
+  params:
+    - name: git-url
+      type: string
+      description: Git repository to build.
+      default: https://github.com/mjovanovic0/redhat-advanced-cluster-security-mcp.git
+    - name: git-revision
+      type: string
+      description: Branch, tag or commit to build.
+      default: main
+    - name: acs-version
+      type: string
+      description: RHACS version whose OpenAPI spec is bundled. Should match your Central version.
+      default: 4.11.6
+    - name: image
+      type: string
+      description: Image repository to push to (without tag).
+      default: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/rhacs-mcp
+    - name: image-tag
+      type: string
+      description: Image tag to push.
+      default: latest
+  workspaces:
+    - name: source
+      description: Workspace the repository is cloned into and built from.
+  tasks:
+    - name: fetch-source
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: URL
+          value: $(params.git-url)
+        - name: REVISION
+          value: $(params.git-revision)
+      workspaces:
+        - name: output
+          workspace: source
+
+    - name: build-and-push
+      runAfter:
+        - fetch-source
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: buildah
+          - name: namespace
+            value: openshift-pipelines
+      params:
+        - name: IMAGE
+          value: $(params.image):$(params.image-tag)
+        - name: DOCKERFILE
+          value: ./Containerfile
+        - name: CONTEXT
+          value: .
+        - name: BUILD_EXTRA_ARGS
+          value: --build-arg ACS_VERSION=$(params.acs-version) --label org.opencontainers.image.revision=$(tasks.fetch-source.results.COMMIT)
+      workspaces:
+        - name: source
+          workspace: source
+
+  results:
+    - name: IMAGE_URL
+      value: $(tasks.build-and-push.results.IMAGE_URL)
+    - name: IMAGE_DIGEST
+      value: $(tasks.build-and-push.results.IMAGE_DIGEST)
+    - name: COMMIT
+      value: $(tasks.fetch-source.results.COMMIT)

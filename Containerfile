@@ -9,6 +9,10 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY src/ src/
 RUN npm run build
+# RHACS version whose OpenAPI spec is bundled; should match your Central version.
+ARG ACS_VERSION=4.11.6
+COPY scripts/ scripts/
+RUN npm run generate-spec -- "${ACS_VERSION}"
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal
 RUN microdnf --disablerepo=* --enablerepo=ubi-9-baseos-rpms --enablerepo=ubi-9-appstream-rpms --enablerepo=ubi-9-codeready-builder-rpms module enable -y nodejs:20 && \
@@ -19,6 +23,6 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist/ dist/
-COPY api_spec/ api_spec/
+COPY --from=builder /app/api_spec/ api_spec/
 USER 1001
 ENTRYPOINT ["node", "dist/index.js"]

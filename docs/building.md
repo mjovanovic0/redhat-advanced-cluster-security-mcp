@@ -35,7 +35,10 @@ The discovery tools (`rhacs_list_services`, `rhacs_list_endpoints`, `rhacs_get_e
 
 ## Container Build
 
-Generate `api_spec/` first (see above); the Containerfile copies it into the image.
+The Containerfile generates `api_spec/` in its builder stage. Pick the RHACS version with
+`--build-arg ACS_VERSION=<version>` (default `4.11.6`). The build needs internet access.
+
+To build on OpenShift and push to the internal registry, see [Tekton](tekton.md).
 
 ```bash
 # Build with podman

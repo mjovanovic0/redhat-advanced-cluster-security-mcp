@@ -1,0 +1,26 @@
+# Start a build:  oc create -f tekton/pipelinerun.yaml -n <namespace>
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: rhacs-mcp-build-
+  labels:
+    app.kubernetes.io/name: rhacs-mcp
+spec:
+  pipelineRef:
+    name: rhacs-mcp-build
+  params:
+    - name: acs-version
+      value: 4.11.6
+    - name: image-tag
+      value: latest
+  taskRunTemplate:
+    serviceAccountName: pipeline
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi

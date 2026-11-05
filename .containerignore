@@ -1,0 +1,6 @@
+node_modules/
+dist/
+api_spec/
+.git/
+*.tgz
+.env

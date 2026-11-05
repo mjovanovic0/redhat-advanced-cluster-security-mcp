@@ -35,7 +35,7 @@ npm run generate-spec -- ./v1.swagger.json ./v2.swagger.json
 ```
 
 The server exits with an error at startup if `api_spec/` is missing. The container build
-copies `api_spec/` into the image, so generate it before running `./build.sh`.
+generates the spec itself (see below), so this step is only needed when running from source.
 
 ## Quick Start
 
@@ -56,9 +56,14 @@ npm start
 
 ## Container
 
+The image bundles the API spec for the RHACS version given by the `ACS_VERSION` build arg
+(default `4.11.6`):
+
 ```bash
 # Build
 ./build.sh
+# or for another RHACS version
+podman build --build-arg ACS_VERSION=4.10.2 -t rhacs-mcp -f Containerfile .
 
 # Run
 podman run -i --rm \
@@ -73,6 +78,7 @@ podman run -i --rm \
 - [Claude Desktop / Claude Code Setup](docs/claude-desktop-setup.md)
 - [Tools Reference](docs/tools.md)
 - [Architecture](docs/architecture.md)
+- [Building on OpenShift with Tekton](docs/tekton.md)
 
 ## Project Structure
 
@@ -87,6 +93,7 @@ api_spec/               # Generated RHACS API spec (not committed)
 scripts/                # generate-api-spec.mjs (swagger -> api_spec)
 docs/                   # Documentation
 Containerfile           # Multi-stage UBI9 container build
+tekton/                 # OpenShift Pipelines build -> internal registry
 podman-compose.yml      # Local testing config
 ```
 
