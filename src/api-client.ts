@@ -79,6 +79,15 @@ function truncateResponse(data: unknown): { data: unknown; truncated: boolean } 
   };
 }
 
+const TLS_ERROR_CODES = new Set([
+  "SELF_SIGNED_CERT_IN_CHAIN",
+  "DEPTH_ZERO_SELF_SIGNED_CERT",
+  "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+  "UNABLE_TO_GET_ISSUER_CERT_LOCALLY",
+  "CERT_HAS_EXPIRED",
+  "ERR_TLS_CERT_ALTNAME_INVALID",
+]);
+
 function formatNetworkError(err: unknown, url: string): string {
   const endpoint = process.env[productConfig.endpointEnvVar] ?? "(not set)";
   if (err instanceof TypeError && String(err.cause ?? err.message).includes("ECONNREFUSED")) {
@@ -90,8 +99,24 @@ function formatNetworkError(err: unknown, url: string): string {
   if (err instanceof DOMException && err.name === "AbortError") {
     return `Request to ${url} timed out after ${getTimeout()}ms.`;
   }
+  const cause = (err as { cause?: { code?: string; message?: string } })?.cause;
+  if (cause?.code === "ERR_TLS_CERT_ALTNAME_INVALID") {
+    return (
+      `TLS verification failed calling ${url}: ${cause.message}. ` +
+      `${productConfig.endpointEnvVar} must use a hostname the certificate is issued for ` +
+      `(Central's own certificate covers central.stackrox.svc), or set ROX_INSECURE_SKIP_TLS_VERIFY=true for testing.`
+    );
+  }
+  if (cause?.code && TLS_ERROR_CODES.has(cause.code)) {
+    return (
+      `TLS verification failed calling ${url}: ${cause.message ?? cause.code}. ` +
+      `${productConfig.name} probably uses a certificate from a private CA. Set NODE_EXTRA_CA_CERTS to that CA ` +
+      `(PEM file), or ROX_INSECURE_SKIP_TLS_VERIFY=true for testing.`
+    );
+  }
   if (err instanceof Error) {
-    return `Network error calling ${url}: ${err.message}`;
+    const detail = cause?.message ? ` (${cause.message})` : "";
+    return `Network error calling ${url}: ${err.message}${detail}`;
   }
   return `Unknown error calling ${url}: ${String(err)}`;
 }

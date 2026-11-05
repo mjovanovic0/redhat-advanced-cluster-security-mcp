@@ -19,6 +19,11 @@ spec:
         # Resolve "rhacs-mcp:latest" against the ImageStream in this namespace.
         alpha.image.policy.openshift.io/resolve-names: "*"
     spec:
+      volumes:
+        - name: rhacs-central-ca
+          configMap:
+            name: rhacs-central-ca
+            optional: true
       containers:
         - name: rhacs-mcp
           image: rhacs-mcp:latest
@@ -31,10 +36,18 @@ spec:
               value: http
             - name: MCP_PORT
               value: "8080"
-            # Central's default certificate is signed by the RHACS internal CA. Either mount that
-            # CA and point NODE_EXTRA_CA_CERTS at it, or (testing only) skip verification:
+            # Central's default certificate is signed by the RHACS internal CA. Put that CA in the
+            # optional ConfigMap rhacs-central-ca (key ca.pem) - see docs/openshift-deploy.md.
+            # If the ConfigMap is absent, Node logs a warning and uses the default trust store.
+            - name: NODE_EXTRA_CA_CERTS
+              value: /etc/rhacs-ca/ca.pem
+            # Testing only: skip TLS verification instead of trusting the CA.
             # - name: ROX_INSECURE_SKIP_TLS_VERIFY
             #   value: "true"
+          volumeMounts:
+            - name: rhacs-central-ca
+              mountPath: /etc/rhacs-ca
+              readOnly: true
           envFrom:
             - secretRef:
                 name: rhacs-mcp

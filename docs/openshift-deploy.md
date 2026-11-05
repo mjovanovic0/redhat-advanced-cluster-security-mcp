@@ -59,15 +59,34 @@ oc get ingresses.config cluster -o jsonpath='{.spec.requiredHSTSPolicies}'
 
 ### Central TLS
 
-`ROX_ENDPOINT` can be the Central Route or, when RHACS runs in the same cluster, the service
-`https://central.stackrox.svc:443`. Central's default certificate is signed by the RHACS internal
-CA, which Node does not trust. Either:
+Central's default certificate is signed by the RHACS internal CA, which Node does not trust, so
+calls fail with `TLS verification failed ... self-signed certificate in certificate chain`.
 
-- mount that CA (for example from a ConfigMap) and set `NODE_EXTRA_CA_CERTS` to its path, or
-- for testing only, uncomment `ROX_INSECURE_SKIP_TLS_VERIFY: "true"` in `deployment.yaml`.
+**Recommended: trust the RHACS CA.** The Deployment mounts the optional ConfigMap
+`rhacs-central-ca` and sets `NODE_EXTRA_CA_CERTS=/etc/rhacs-ca/ca.pem`:
 
-If Central has a certificate from a CA the cluster trusts (e.g. the Route uses the default
-ingress certificate signed by a public CA), nothing is needed.
+```bash
+# RHACS in the same cluster (namespace stackrox):
+oc get secret central-tls -n stackrox -o jsonpath='{.data.ca\.pem}' | base64 -d > rhacs-ca.pem
+# or with roxctl:  roxctl -e <central>:443 central cert > rhacs-ca.pem
+
+oc create configmap rhacs-central-ca --from-file=ca.pem=rhacs-ca.pem -n rhacs-mcp
+oc rollout restart deployment/rhacs-mcp -n rhacs-mcp
+```
+
+Central's own certificate is issued for `central.stackrox.svc`, not for the Route hostname. With
+the CA approach, point `ROX_ENDPOINT` at the service (or at a Route host that matches the
+certificate), otherwise verification fails with a hostname mismatch:
+
+```bash
+oc set data secret/rhacs-mcp ROX_ENDPOINT=https://central.stackrox.svc:443 -n rhacs-mcp
+```
+
+If the Central Route is `reencrypt`/`edge` with a certificate from a CA the system already trusts,
+nothing is needed. If it is signed by a different private CA, put that CA in `ca.pem` instead.
+
+**Testing only: skip verification.** Uncomment `ROX_INSECURE_SKIP_TLS_VERIFY: "true"` in
+`deployment.yaml` (or `oc set env deployment/rhacs-mcp ROX_INSECURE_SKIP_TLS_VERIFY=true`).
 
 ## Test
 
