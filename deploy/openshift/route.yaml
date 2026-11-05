@@ -5,6 +5,10 @@ metadata:
   annotations:
     # Streaming export endpoints can take up to 120s.
     haproxy.router.openshift.io/timeout: 150s
+    # HSTS; required on clusters with ingresses.config/cluster spec.requiredHSTSPolicies.
+    # Must satisfy that policy (max-age range, includeSubDomains, preload):
+    #   oc get ingresses.config cluster -o jsonpath='{.spec.requiredHSTSPolicies}'
+    haproxy.router.openshift.io/hsts_header: max-age=31536000;includeSubDomains;preload
 spec:
   # host: rhacs-mcp.apps.example.com   # defaults to rhacs-mcp-<namespace>.<apps domain>
   to:

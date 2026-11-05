@@ -43,6 +43,20 @@ Print the MCP token for your clients:
 oc get secret rhacs-mcp -o jsonpath='{.data.MCP_AUTH_TOKEN}' | base64 -d; echo
 ```
 
+### HSTS policy
+
+If the Route is rejected with `HSTS max-age must be set correctly in HSTS annotation`, the cluster
+enforces HSTS on Routes. `route.yaml` sets
+`haproxy.router.openshift.io/hsts_header: max-age=31536000;includeSubDomains;preload`; adjust it to
+what the cluster requires:
+
+```bash
+oc get ingresses.config cluster -o jsonpath='{.spec.requiredHSTSPolicies}'
+```
+
+`maxAge.smallestMaxAge` / `largestMaxAge` bound `max-age`, and `includeSubDomainsPolicy` /
+`preloadPolicy` say whether those flags must or must not be present.
+
 ### Central TLS
 
 `ROX_ENDPOINT` can be the Central Route or, when RHACS runs in the same cluster, the service
